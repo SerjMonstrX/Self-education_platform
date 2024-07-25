@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
 
+from exams.models import Exam
 from .models import Section, Material
 from .serializers import SectionSerializer, MaterialSerializer
 from django.db.models import Q
@@ -62,6 +63,9 @@ class MaterialCreateAPIView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        section = serializer.validated_data['section']
+        if section.owner != self.request.user:
+            raise PermissionDenied("Вы не являетесь владельцем этого раздела.")
         serializer.save(owner=self.request.user)
 
 
@@ -92,16 +96,18 @@ class MaterialUpdateAPIView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         user = self.request.user
-        material_id = self.kwargs['pk']
-        material = Material.objects.get(pk=material_id)
-        if material.owner == user or user.groups.filter(name='Moderators').exists():
+        exam_id = self.kwargs['pk']
+        exam = Exam.objects.get(pk=exam_id)
+        material = exam.smaterial
+
+        # Проверка, что пользователь является владельцем материала и раздела, или модератором
+        if (exam.owner == user and material.owner == user) or user.groups.filter(name='Moderators').exists():
             serializer.save()
         else:
-            # Если пользователь не владелец урока и не модератор, не допускать редактирование
             raise PermissionDenied("У вас нет разрешения редактировать этот материал.")
 
 
 class MaterialDestroyAPIView(generics.DestroyAPIView):
-    serializer_class = SectionSerializer
+    serializer_class = MaterialSerializer
     queryset = Material.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsOwner | IsModerator]

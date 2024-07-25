@@ -21,8 +21,8 @@ class Section(models.Model):
 
 
 class Material(models.Model):
-    section = models.ForeignKey(Section, on_delete=models.CASCADE, verbose_name='название раздела')
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='владелец')
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, verbose_name='название раздела', related_name='materials')
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='владелец', related_name='materials')
     title = models.CharField(max_length=200, verbose_name='название материалов')
     content = models.TextField(verbose_name='содержимое материалов')
     is_public = models.BooleanField(default=False, verbose_name='признак публичности')
@@ -33,4 +33,3 @@ class Material(models.Model):
     class Meta:
         verbose_name = 'материалы'
         verbose_name_plural = 'материалы'
-
