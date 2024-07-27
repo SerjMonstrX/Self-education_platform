@@ -5,7 +5,7 @@ from .models import Exam, Question, Answer
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
-        fields = ['id', 'text', 'is_correct']
+        fields = ['id', 'question', 'text', 'is_correct']
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -17,9 +17,9 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class ExamSerializer(serializers.ModelSerializer):
-    questions = QuestionSerializer(many=True)
+    questions = QuestionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Exam
-        fields = ['id', 'title', 'description', 'material', 'owner']
+        fields = ['id', 'title', 'description', 'material', 'questions', 'is_public']
         read_only_fields = ['owner']
