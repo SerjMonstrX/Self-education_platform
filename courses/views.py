@@ -9,6 +9,10 @@ from courses.permissions import IsModerator, IsModeratorReadOnly, IsOwner
 
 
 class SectionCreateAPIView(generics.CreateAPIView):
+    """
+    API-представление для создания нового раздела.
+    Позволяет аутентифицированным пользователям создавать разделы.
+    """
     serializer_class = SectionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -17,26 +21,36 @@ class SectionCreateAPIView(generics.CreateAPIView):
 
 
 class SectionListAPIView(generics.ListAPIView):
+    """
+    API-представление для получения списка разделов.
+    Возвращает разделы, принадлежащие аутентифицированному пользователю, или публичные разделы.
+    """
     serializer_class = SectionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
-            # Возвращаем разделы пользователя или публичные разделы
             return Section.objects.filter(Q(owner=user) | Q(is_public=True))
         else:
-            # Возвращаем только публичные разделы для неаутентифицированных пользователей
             return Section.objects.filter(is_public=True)
 
 
 class SectionRetrieveAPIView(generics.RetrieveAPIView):
+    """
+    API-представление для получения информации о конкретном разделе.
+    Доступно только владельцу или модераторам.
+    """
     serializer_class = SectionSerializer
     queryset = Section.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsOwner | IsModerator]
 
 
 class SectionUpdateAPIView(generics.UpdateAPIView):
+    """
+    API-представление для обновления информации о разделе.
+    Обновление доступно только владельцу или модераторам.
+    """
     serializer_class = SectionSerializer
     queryset = Section.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsOwner | IsModerator]
@@ -48,17 +62,24 @@ class SectionUpdateAPIView(generics.UpdateAPIView):
         if section.owner == user or user.groups.filter(name='Moderators').exists():
             serializer.save()
         else:
-            # Если пользователь не владелец урока и не модератор, не допускать редактирование
             raise PermissionDenied("У вас нет разрешения редактировать этот раздел.")
 
 
 class SectionDestroyAPIView(generics.DestroyAPIView):
+    """
+    API-представление для удаления раздела.
+    Удаление доступно только владельцу или модераторам.
+    """
     serializer_class = SectionSerializer
     queryset = Section.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsOwner | IsModerator]
 
 
 class MaterialCreateAPIView(generics.CreateAPIView):
+    """
+    API-представление для создания нового материала.
+    Позволяет аутентифицированным пользователям создавать материалы в их разделах.
+    """
     serializer_class = MaterialSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -70,44 +91,53 @@ class MaterialCreateAPIView(generics.CreateAPIView):
 
 
 class MaterialListAPIView(generics.ListAPIView):
+    """
+    API-представление для получения списка материалов.
+    Возвращает материалы, принадлежащие аутентифицированному пользователю, или публичные материалы.
+    """
     serializer_class = MaterialSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
-            # Возвращаем материалы пользователя или публичные материалы
             return Material.objects.filter(Q(owner=user) | Q(is_public=True))
         else:
-            # Возвращаем только публичные материалы для неаутентифицированных пользователей
             return Material.objects.filter(is_public=True)
 
 
 class MaterialRetrieveAPIView(generics.RetrieveAPIView):
+    """
+    API-представление для получения информации о конкретном материале.
+    Доступно только владельцу или модераторам.
+    """
     serializer_class = MaterialSerializer
     queryset = Material.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsOwner | IsModerator]
 
 
 class MaterialUpdateAPIView(generics.UpdateAPIView):
+    """
+    API-представление для обновления информации о материале.
+    Обновление доступно только владельцу или модераторам.
+    """
     serializer_class = MaterialSerializer
     queryset = Material.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsOwner | IsModerator]
 
     def perform_update(self, serializer):
         user = self.request.user
-        exam_id = self.kwargs['pk']
-        exam = Exam.objects.get(pk=exam_id)
-        material = exam.smaterial
-
-        # Проверка, что пользователь является владельцем материала и раздела, или модератором
-        if (exam.owner == user and material.owner == user) or user.groups.filter(name='Moderators').exists():
-            serializer.save()
-        else:
+        section = serializer.validated_data['section']
+        if section.owner != user or user.groups.filter(name='Moderators').exists():
             raise PermissionDenied("У вас нет разрешения редактировать этот материал.")
+        serializer.save(owner=self.request.user)
 
 
 class MaterialDestroyAPIView(generics.DestroyAPIView):
+    """
+    API-представление для удаления материала.
+    Удаление доступно только владельцу или модераторам.
+    """
     serializer_class = MaterialSerializer
     queryset = Material.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsOwner | IsModerator]
