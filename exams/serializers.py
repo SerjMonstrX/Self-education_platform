@@ -23,3 +23,7 @@ class ExamSerializer(serializers.ModelSerializer):
         model = Exam
         fields = ['id', 'title', 'description', 'material', 'questions', 'is_public']
         read_only_fields = ['owner']
+
+    def update(self, instance, validated_data):
+        validated_data['material'] = instance.material
+        return super().update(instance, validated_data)
